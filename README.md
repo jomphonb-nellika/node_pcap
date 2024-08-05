@@ -212,7 +212,7 @@ const pcap_session = pcap.createOfflineSession('/path/to/capture.pcap', options)
 pcap_session.on('packet', function (raw_packet) {
     // do some stuff with a raw packet
 });
-pcap_session.on('complete', function () {
+pcap_session.on('end', function () {
     // do some stuff when file ends
 });
 ```
