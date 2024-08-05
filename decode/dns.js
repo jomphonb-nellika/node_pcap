@@ -1,254 +1,258 @@
 var IPv4Addr = require("./ipv4_addr");
 var IPv6Addr = require("./ipv6_addr");
 
-function DnsFlags() {
-    // is this a response?
-    this.isResponse = undefined;
+class DnsFlags {
+    constructor() {
+        // is this a response?
+        this.isResponse = undefined;
 
-    // 0 == Query
-    // 1 == Inverse query
-    // 2 == Status
-    // 3-15 Reserved for future use
-    this.opcode = undefined;
+        // 0 == Query
+        // 1 == Inverse query
+        // 2 == Status
+        // 3-15 Reserved for future use
+        this.opcode = undefined;
 
-    // is the server the authority for the domain?
-    this.isAuthority = undefined;
+        // is the server the authority for the domain?
+        this.isAuthority = undefined;
 
-    // is this message truncated?
-    this.isTruncated = undefined;
+        // is this message truncated?
+        this.isTruncated = undefined;
 
-    // should name server recursively
-    // resolve domain?
-    this.isRecursionDesired = undefined;
+        // should name server recursively
+        // resolve domain?
+        this.isRecursionDesired = undefined;
 
-    // Can the server even do recursion?
-    this.isRecursionAvailible = undefined;
+        // Can the server even do recursion?
+        this.isRecursionAvailible = undefined;
 
-    // Reserved for future use, unless the present is the future
-    // then assume the past is the present and the present is the
-    // past...or just update to support whatever this became.
-    //
-    // currently "should" always be zero.
-    this.z = undefined;
+        // Reserved for future use, unless the present is the future
+        // then assume the past is the present and the present is the
+        // past...or just update to support whatever this became.
+        //
+        // currently "should" always be zero.
+        this.z = undefined;
 
-    // 0 == no error
-    // 1 == format error (query could not be interpeted)
-    // 2 == server error
-    // 3 == name error (domain requested by query does not exist)
-    // 4 == unsupported request
-    // 5 == refused
-    // a 4bit reply status code
-    this.responseCode = undefined;
-}
-
-DnsFlags.prototype.decode = function (raw_packet, offset) {
-    var byte1 = raw_packet[offset];
-    var byte2 = raw_packet[offset + 1];
-
-    this.isResponse = Boolean(byte1 & 0x80);
-    this.opcode = (byte1 & 0x78) >> 3;
-
-    this.isAuthority = Boolean(byte1 & 0x04);
-    this.isTruncated = Boolean(byte1 & 0x02);
-    this.isRecursionDesired   = Boolean(byte1 & 0x01);
-    this.isRecursionAvailible = Boolean(byte2 & 0x80);
-    this.z = byte2 & 0x70 >> 4;
-    this.responseCode = byte2 & 0x0F;
-    return this;
-};
-
-DnsFlags.prototype.toString = function () {
-    return "{ isResponse:" + this.isResponse +
-        " opcode:" + this.opcode +
-        " isAuthority:" + this.isAuthority +
-        " isTruncated:" + this.isTruncated +
-        " isRecursionDesired:" + this.isRecursionDesired +
-        " isRecursionAvailible:" + this.isRecursionAvailible +
-        " z:" + this.z +
-        " responseCode:" + this.responseCode +
-        " }";
-};
-
-function DNS(emitter) {
-    this.emitter = emitter;
-    this.header = undefined;
-    this.question = undefined;
-    this.answer = undefined;
-    this.authority = undefined;
-    this.additional = undefined;
-    this._error = undefined;
-}
-
-function DNSRRSet(count) {
-    this.rrs = new Array(count);
-}
-
-DNSRRSet.prototype.toString = function () {
-    return this.rrs.join(", ");
-};
-
-DNS.prototype.decoderName = "dns";
-DNS.prototype.eventsOnDecode = true;
-
-// http://tools.ietf.org/html/rfc1035
-DNS.prototype.decode = function (raw_packet, offset) {
-    //these 2 fields will be deleted soon.
-    this.raw_packet = raw_packet;
-    this.offset = offset;
-
-    this.id = raw_packet.readUInt16BE(offset); // 0, 1
-    this.header = new DnsFlags().decode(raw_packet, offset+2);
-    this.qdcount = raw_packet.readUInt16BE(offset + 4); // 4, 5
-    this.ancount = raw_packet.readUInt16BE(offset + 6); // 6, 7
-    this.nscount = raw_packet.readUInt16BE(offset + 8); // 8, 9
-    this.arcount = raw_packet.readUInt16BE(offset + 10); // 10, 11
-    this.offset += 12;
-
-    this.question = this.decode_RRs(this.qdcount, true);
-    this.answer = this.decode_RRs(this.ancount, false);
-    this.authority = this.decode_RRs(this.nscount, false);
-    this.additional = this.decode_RRs(this.arcount, false);
-
-    if(this.emitter) { this.emitter.emit("dns", this); }
-    return this;
-};
-
-DNS.prototype.decode_RRs = function (count, is_question) {
-    if (count > 100) {
-        this._error = "Malformed DNS packet: too many RRs at offset " + this.offset;
-        return;
+        // 0 == no error
+        // 1 == format error (query could not be interpeted)
+        // 2 == server error
+        // 3 == name error (domain requested by query does not exist)
+        // 4 == unsupported request
+        // 5 == refused
+        // a 4bit reply status code
+        this.responseCode = undefined;
     }
+    decode(raw_packet, offset) {
+        var byte1 = raw_packet[offset];
+        var byte2 = raw_packet[offset + 1];
 
-    var ret = new DNSRRSet(count);
-    for (var i = 0; i < count; i++) {
-        ret.rrs[i] = this.decode_RR(is_question);
+        this.isResponse = Boolean(byte1 & 0x80);
+        this.opcode = (byte1 & 0x78) >> 3;
+
+        this.isAuthority = Boolean(byte1 & 0x04);
+        this.isTruncated = Boolean(byte1 & 0x02);
+        this.isRecursionDesired = Boolean(byte1 & 0x01);
+        this.isRecursionAvailible = Boolean(byte2 & 0x80);
+        this.z = byte2 & 0x70 >> 4;
+        this.responseCode = byte2 & 0x0F;
+        return this;
     }
-    return ret;
-};
-
-function DNSRR(is_question) {
-    this.name = "";
-    this.type = null;
-    this.class = null;
-    this.ttl = null;
-    this.rdlength = null;
-    this.rdata = null;
-    this.is_question = is_question;
+    toString() {
+        return "{ isResponse:" + this.isResponse +
+            " opcode:" + this.opcode +
+            " isAuthority:" + this.isAuthority +
+            " isTruncated:" + this.isTruncated +
+            " isRecursionDesired:" + this.isRecursionDesired +
+            " isRecursionAvailible:" + this.isRecursionAvailible +
+            " z:" + this.z +
+            " responseCode:" + this.responseCode +
+            " }";
+    }
 }
 
-DNSRR.prototype.toString = function () {
-    var ret = this.name + " ";
-    if (this.is_question) {
-        ret += qtype_to_string(this.type) + " " + qclass_to_string(this.class);
-    } else {
-        ret += type_to_string(this.type) + " " + class_to_string(this.class) + " " + this.ttl + " " + this.rdata;
+
+
+class DNS {
+    decoderName = "dns";
+    eventsOnDecode = true;
+
+    constructor(emitter) {
+        this.emitter = emitter;
+        this.header = undefined;
+        this.question = undefined;
+        this.answer = undefined;
+        this.authority = undefined;
+        this.additional = undefined;
+        this._error = undefined;
     }
-    return ret;
-};
+    // http://tools.ietf.org/html/rfc1035
+    decode(raw_packet, offset) {
+        //these 2 fields will be deleted soon.
+        this.raw_packet = raw_packet;
+        this.offset = offset;
 
-DNS.prototype.read_name = function () {
-    var result = "";
-    var len_or_ptr;
-    var pointer_follows = 0;
-    var pos = this.offset;
+        this.id = raw_packet.readUInt16BE(offset); // 0, 1
+        this.header = new DnsFlags().decode(raw_packet, offset + 2);
+        this.qdcount = raw_packet.readUInt16BE(offset + 4); // 4, 5
+        this.ancount = raw_packet.readUInt16BE(offset + 6); // 6, 7
+        this.nscount = raw_packet.readUInt16BE(offset + 8); // 8, 9
+        this.arcount = raw_packet.readUInt16BE(offset + 10); // 10, 11
+        this.offset += 12;
 
-    while ((len_or_ptr = this.raw_packet[pos]) !== 0x00) {
-        if ((len_or_ptr & 0xC0) === 0xC0) {
-            // pointer is bottom 6 bits of current byte, plus all 8 bits of next byte
-            pos = ((len_or_ptr & ~0xC0) << 8) | this.raw_packet[pos + 1];
-            pointer_follows++;
-            if (pointer_follows === 1) {
-                this.offset += 2;
-            }
-            if (pointer_follows > 5) {
-                throw new Error("invalid DNS RR: too many compression pointers found at offset " + pos);
-            }
-        } else {
-            if (result.length > 0) {
-                result += ".";
-            }
-            if (len_or_ptr > 63) {
-                throw new Error("invalid DNS RR: length is too large at offset " + pos);
-            }
-            pos++;
-            for (var i = pos; i < (pos + len_or_ptr) && i < this.raw_packet.length; i++) {
-                if (i > this.raw_packet.length) {
-                    throw new Error("invalid DNS RR: read beyond end of packet at offset " + i);
+        this.question = this.decode_RRs(this.qdcount, true);
+        this.answer = this.decode_RRs(this.ancount, false);
+        this.authority = this.decode_RRs(this.nscount, false);
+        this.additional = this.decode_RRs(this.arcount, false);
+
+        if (this.emitter) { this.emitter.emit("dns", this); }
+        return this;
+    }
+    decode_RRs(count, is_question) {
+        if (count > 100) {
+            this._error = "Malformed DNS packet: too many RRs at offset " + this.offset;
+            return;
+        }
+
+        var ret = new DNSRRSet(count);
+        for (var i = 0; i < count; i++) {
+            ret.rrs[i] = this.decode_RR(is_question);
+        }
+        return ret;
+    }
+    read_name() {
+        var result = "";
+        var len_or_ptr;
+        var pointer_follows = 0;
+        var pos = this.offset;
+
+        while ((len_or_ptr = this.raw_packet[pos]) !== 0x00) {
+            if ((len_or_ptr & 0xC0) === 0xC0) {
+                // pointer is bottom 6 bits of current byte, plus all 8 bits of next byte
+                pos = ((len_or_ptr & ~0xC0) << 8) | this.raw_packet[pos + 1];
+                pointer_follows++;
+                if (pointer_follows === 1) {
+                    this.offset += 2;
                 }
-                var ch = this.raw_packet[i];
-                result += String.fromCharCode(ch);
-            }
-            pos += len_or_ptr;
+                if (pointer_follows > 5) {
+                    throw new Error("invalid DNS RR: too many compression pointers found at offset " + pos);
+                }
+            } else {
+                if (result.length > 0) {
+                    result += ".";
+                }
+                if (len_or_ptr > 63) {
+                    throw new Error("invalid DNS RR: length is too large at offset " + pos);
+                }
+                pos++;
+                for (var i = pos; i < (pos + len_or_ptr) && i < this.raw_packet.length; i++) {
+                    if (i > this.raw_packet.length) {
+                        throw new Error("invalid DNS RR: read beyond end of packet at offset " + i);
+                    }
+                    var ch = this.raw_packet[i];
+                    result += String.fromCharCode(ch);
+                }
+                pos += len_or_ptr;
 
-            if (pointer_follows === 0) {
-                this.offset = pos;
+                if (pointer_follows === 0) {
+                    this.offset = pos;
+                }
             }
         }
+
+        if (pointer_follows === 0) {
+            this.offset++;
+        }
+
+        return result;
     }
+    decode_RR(is_question) {
+        if (this.offset > this.raw_packet.length) {
+            throw new Error("Malformed DNS RR. Offset is beyond packet len (decode_RR) :" + this.offset + " packet_len:" + this.raw_packet.length);
+        }
 
-    if (pointer_follows === 0) {
-        this.offset++;
-    }
+        var rr = new DNSRR(is_question);
 
-    return result;
-};
+        rr.name = this.read_name();
 
-DNS.prototype.decode_RR = function (is_question) {
-    if (this.offset > this.raw_packet.length) {
-        throw new Error("Malformed DNS RR. Offset is beyond packet len (decode_RR) :" + this.offset + " packet_len:" + this.raw_packet.length);
-    }
+        rr.type = this.raw_packet.readUInt16BE(this.offset);
+        this.offset += 2;
+        rr.class = this.raw_packet.readUInt16BE(this.offset);
+        this.offset += 2;
+        if (is_question) {
+            return rr;
+        }
 
-    var rr = new DNSRR(is_question);
+        rr.ttl = this.raw_packet.readUInt32BE(this.offset);
+        this.offset += 4;
+        rr.rdlength = this.raw_packet.readUInt16BE(this.offset);
+        this.offset += 2;
 
-    rr.name = this.read_name();
+        if (rr.type === 1 && rr.class === 1 && rr.rdlength) { // A, IN
+            rr.rdata = new IPv4Addr().decode(this.raw_packet, this.offset);
+        } else if (rr.type === 2 && rr.class === 1) { // NS, IN
+            rr.rdata = this.read_name();
+            this.offset -= rr.rdlength; // read_name moves offset
+        } else if (rr.type === 28 && rr.class === 1 && rr.rdlength === 16) {
+            rr.data = new IPv6Addr(this.raw_packet, this.offset);
+        }
+        // TODO - decode other rr types
+        this.offset += rr.rdlength;
 
-    rr.type = this.raw_packet.readUInt16BE(this.offset);
-    this.offset += 2;
-    rr.class = this.raw_packet.readUInt16BE(this.offset);
-    this.offset += 2;
-    if (is_question) {
         return rr;
     }
+    toString() {
+        var ret = " DNS ";
 
-    rr.ttl = this.raw_packet.readUInt32BE(this.offset);
-    this.offset += 4;
-    rr.rdlength = this.raw_packet.readUInt16BE(this.offset);
-    this.offset += 2;
+        ret += this.header.toString();
+        if (this.qdcount > 0) {
+            ret += "\n  question:" + this.question.rrs[0];
+        }
+        if (this.ancount > 0) {
+            ret += "\n  answer:" + this.answer;
+        }
+        if (this.nscount > 0) {
+            ret += "\n  authority:" + this.authority;
+        }
+        if (this.arcount > 0) {
+            ret += "\n  additional:" + this.additional;
+        }
 
-    if (rr.type === 1 && rr.class === 1 && rr.rdlength) { // A, IN
-        rr.rdata = new IPv4Addr().decode(this.raw_packet, this.offset);
-    } else if (rr.type === 2 && rr.class === 1) { // NS, IN
-        rr.rdata = this.read_name();
-        this.offset -= rr.rdlength; // read_name moves offset
-    } else if (rr.type === 28 && rr.class === 1 && rr.rdlength === 16) {
-        rr.data = new IPv6Addr(this.raw_packet, this.offset);
+        return ret;
     }
-    // TODO - decode other rr types
+}
 
-    this.offset += rr.rdlength;
-
-    return rr;
-};
-
-DNS.prototype.toString = function () {
-    var ret = " DNS ";
-
-    ret += this.header.toString();
-    if (this.qdcount > 0) {
-        ret += "\n  question:" + this.question.rrs[0];
+class DNSRRSet {
+    constructor(count) {
+        this.rrs = new Array(count);
     }
-    if (this.ancount > 0) {
-        ret += "\n  answer:" + this.answer;
+    toString() {
+        return this.rrs.join(", ");
     }
-    if (this.nscount > 0) {
-        ret += "\n  authority:" + this.authority;
-    }
-    if (this.arcount > 0) {
-        ret += "\n  additional:" + this.additional;
-    }
+}
 
-    return ret;
-};
+class DNSRR {
+    constructor(is_question) {
+        this.name = "";
+        this.type = null;
+        this.class = null;
+        this.ttl = null;
+        this.rdlength = null;
+        this.rdata = null;
+        this.is_question = is_question;
+    }
+    toString() {
+        var ret = this.name + " ";
+        if (this.is_question) {
+            ret += qtype_to_string(this.type) + " " + qclass_to_string(this.class);
+        } else {
+            ret += type_to_string(this.type) + " " + class_to_string(this.class) + " " + this.ttl + " " + this.rdata;
+        }
+        return ret;
+    }
+}
+
+
+
+
 
 function type_to_string(type_num) {
     switch (type_num) {

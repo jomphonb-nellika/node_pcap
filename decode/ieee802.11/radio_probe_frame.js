@@ -1,11 +1,12 @@
 var radioUtils = require("./radio_utils");
-function RadioProbeFrame () {
-    this.tags = undefined;
+class RadioProbeFrame {
+    constructor() {
+        this.tags = undefined;
+    }
+    decode(raw_packet, offset) {
+        this.tags = radioUtils.parseTags(raw_packet, offset);
+        return this;
+    }
 }
-
-RadioProbeFrame.prototype.decode = function decode(raw_packet, offset) {
-    this.tags = radioUtils.parseTags(raw_packet, offset);
-    return this;
-};
 
 module.exports = RadioProbeFrame;

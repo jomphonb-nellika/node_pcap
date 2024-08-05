@@ -4,13 +4,8 @@ module.exports = function(grunt) {
     var supportingFiles = ["Gruntfile.js"];
     var allJs = tests.concat(src);
     grunt.initConfig({
-        jshint: {
-            options: {
-                jshintrc: true
-            },
-            files: {
-                src: allJs
-            }
+        eslint: {
+            target: "*.js"
         },
         mochaTest: {
             test: {
@@ -38,15 +33,15 @@ module.exports = function(grunt) {
 
     grunt.loadNpmTasks("grunt-coveralls");
     grunt.loadNpmTasks("grunt-mocha-test");
-    grunt.loadNpmTasks("grunt-contrib-jshint");
+    grunt.loadNpmTasks("grunt-eslint");
     grunt.loadNpmTasks("grunt-mocha-istanbul");
 
     //The travis ci build
-    grunt.registerTask("travis", ["jshint", "mocha_istanbul:coverage", "coveralls:src"]);
+    grunt.registerTask("travis", ["eslint", "mocha_istanbul:coverage", "coveralls:src"]);
 
     //Check code coverage with grunt cover
     grunt.registerTask("cover", ["mocha_istanbul:coverage"]);
 
     //Just run grunt for day to day work
-    grunt.registerTask("default", ["jshint", "mochaTest:test"]);
+    grunt.registerTask("default", ["eslint", "mochaTest:test"]);
 };

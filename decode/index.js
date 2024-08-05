@@ -5,7 +5,7 @@ exports.IPv4Packet = require("./ipv4");
 exports.IPv6Packet = require("./ipv6");
 exports.ArpPacket = require("./arp");
 exports.PcapPacket = require("./pcap_packet");
-var PcapPacket = exports.PcapPacket;
+const PcapPacket = exports.PcapPacket;
 
 function decode(packet, emitter, options) {
     return new PcapPacket(emitter).decode(packet, options);

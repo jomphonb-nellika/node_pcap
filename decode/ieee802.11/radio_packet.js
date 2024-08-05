@@ -1,5 +1,3 @@
-/* jshint evil: true */
-
 var RadioFrame = require("./radio_frame");
 var radiotap_fields = require('./radiotap_fields');
 
@@ -20,54 +18,51 @@ function readBigUInt64LE(buffer, offset = 0) {
 }
 
 /** Radiotap header (http://www.radiotap.org) **/
-function RadioPacket(emitter) {
-    this.emitter = emitter;
-    this.headerRevision = undefined;
-    this.headerPad = undefined;
-    this.headerLength = undefined;
-    this.presentFields = undefined;
-    this.fields = undefined;
-    this._decoderCache = {};
+class RadioPacket {
+    constructor(emitter) {
+        this.emitter = emitter;
+        this._decoderCache = {};
+    }
+    decode(raw_packet, offset, options) {
+        var original_offset = offset;
+
+        this.headerRevision = raw_packet[offset++];
+        if (this.headerRevision !== 0)
+            console.warning(`Unknown radiotap version: ${this.headerRevision}`);
+
+        this.headerPad = raw_packet[offset++];
+        this.headerLength = raw_packet.readUInt16LE(offset); offset += 2;
+        this.presentFields = raw_packet.readUInt32LE(offset); offset += 4;
+        // We need to use a bigint if the extension bit is set
+        if (this.presentFields >> 31) {
+            this.presentFields = BigInt(this.presentFields);
+            for (var s = BigInt(32); this.presentFields >> (s - BigInt(1)); s += BigInt(32)) {
+                this.presentFields ^= BigInt(1) << (s - BigInt(1));
+                const v = raw_packet.readUInt32LE(offset); offset += 4;
+                this.presentFields |= BigInt(v) << s;
+            }
+        }
+
+        const cache = (options && options.radiotapCache) || RadioPacket.globalCache;
+        if (!Object.hasOwnProperty.call(cache, this.presentFields))
+            cache[this.presentFields] = buildDecoder(this.presentFields);
+        this.fields = cache[this.presentFields](raw_packet, offset, original_offset + this.headerLength);
+
+        offset = original_offset + this.headerLength;
+
+        if (options && options.decodeLower === false) {
+            this.ieee802_11Frame = raw_packet.slice(offset);
+        } else {
+            this.ieee802_11Frame = new RadioFrame(this.emitter).decode(raw_packet, offset);
+        }
+
+        if (this.emitter) { this.emitter.emit("radio-packet", this); }
+        return this;
+    }
 }
 
 RadioPacket.globalCache = {};
 
-RadioPacket.prototype.decode = function (raw_packet, offset, options) {
-    var original_offset = offset;
-
-    this.headerRevision = raw_packet[offset++];
-    if (this.headerRevision !== 0)
-        console.warning(`Unknown radiotap version: ${this.headerRevision}`);
-
-    this.headerPad = raw_packet[offset++];
-    this.headerLength = raw_packet.readUInt16LE(offset); offset += 2;
-    this.presentFields = raw_packet.readUInt32LE(offset); offset += 4;
-    // We need to use a bigint if the extension bit is set
-    if (this.presentFields >> 31) {
-        this.presentFields = BigInt(this.presentFields);
-        for (var s = BigInt(32); this.presentFields >> (s-BigInt(1)); s += BigInt(32)) {
-            this.presentFields ^= BigInt(1) << (s-BigInt(1));
-            const v = raw_packet.readUInt32LE(offset); offset += 4;
-            this.presentFields |= BigInt(v) << s;
-        }
-    }
-  
-    const cache = (options && options.radiotapCache) || RadioPacket.globalCache;
-    if (!Object.hasOwnProperty.call(cache, this.presentFields))
-        cache[this.presentFields] = buildDecoder(this.presentFields);
-    this.fields = cache[this.presentFields](raw_packet, offset, original_offset + this.headerLength);
-
-    offset = original_offset + this.headerLength;
-
-    if (options && options.decodeLower === false) {
-        this.ieee802_11Frame = raw_packet.slice(offset);
-    } else {
-        this.ieee802_11Frame = new RadioFrame(this.emitter).decode(raw_packet, offset);
-    }
-
-    if(this.emitter) { this.emitter.emit("radio-packet", this); }
-    return this;
-};
 
 // Creates a (data, offset, end_offset) function that parses
 // radiotap field data and returns the `fields` object.

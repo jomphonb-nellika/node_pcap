@@ -4,38 +4,33 @@ var protocols = require("../ip_protocols");
 // https://tools.ietf.org/html/rfc6564
 // none of the header specif details will
 // be decoded by this extension.
-function HeaderExtension() {
-  this.payload = undefined;
-  this.nextHeader = undefined;
-  this.headerLength = undefined;
-}
+class HeaderExtension {
+  decode(raw_packet, offset) {
+    var originalOffset = offset;
+    this.nextHeader = raw_packet[offset++];
+    this.headerLength = (raw_packet[offset++] + 1) * 8;
 
-HeaderExtension.prototype.decode = function (raw_packet, offset) {
-  var originalOffset = offset;
-  this.nextHeader = raw_packet[offset++];
-  this.headerLength = (raw_packet[offset++]+1)*8;
+    offset = originalOffset + this.headerLength;
 
-  offset = originalOffset + this.headerLength;
+    var ProtocolDecoder = protocols[this.nextHeader];
+    if (ProtocolDecoder === undefined) {
+      this.protocolName = "Unknown";
+    } else {
+      this.payload = new ProtocolDecoder().decode(raw_packet, offset, raw_packet.length - offset);
+    }
 
-  var ProtocolDecoder = protocols[this.nextHeader];
-  if(ProtocolDecoder === undefined) {
-    this.protocolName = "Unknown";
-  } else {
-    this.payload = new ProtocolDecoder().decode(raw_packet, offset, raw_packet.length - offset);
+    return this;
   }
-
-  return this;
-};
-
-HeaderExtension.prototype.toString = function () {
-  var ret = "";
-  if(this.payload === undefined || this.payload === null){
+  toString() {
+    var ret = "";
+    if (this.payload === undefined || this.payload === null) {
       ret += "proto " + this.nextHeader;
-  } else {
+    } else {
       ret += this.payload.constructor.name;
-  }
+    }
 
-  return ret + " " + this.payload;
-};
+    return ret + " " + this.payload;
+  }
+}
 
 module.exports = HeaderExtension;
