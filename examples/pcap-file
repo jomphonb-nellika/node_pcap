@@ -1,0 +1,20 @@
+#!/usr/bin/env node
+
+const pcap = require('../pcap');
+
+if (process.argv.length < 3) {
+    console.error("usage: pcap-file <file> [filter]");
+    process.exit(1);
+}
+
+pcap_session = pcap.createOfflineSession(process.argv[2], { filter: process.argv[3] });
+
+// listen for packets, decode them, and feed TCP to the tracker
+pcap_session.on("packet", function (raw_packet) {
+    var packet = pcap.decode.packet(raw_packet);
+    console.log(packet);
+});
+
+pcap_session.on("end", function (session) {
+    console.log("End of pcap file");
+});
