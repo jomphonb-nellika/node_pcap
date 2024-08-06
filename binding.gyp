@@ -11,6 +11,15 @@
               "-lpcap"
           ]
       }
+    },
+    {
+      "target_name": "action_after_build",
+      "type": "none",
+      "dependencies": [ "pcap_binding" ],
+      "copies": [ {
+        "files": [ "<(PRODUCT_DIR)/pcap_binding.node" ],
+        "destination": "out",
+      } ],
     }
   ]
 }
