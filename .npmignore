@@ -1,0 +1,11 @@
+build/
+examples/
+out/
+prebuilds/
+spec/
+.github/
+.prebuildrc
+.Gruntfile.js
+.vscode/
+eslint.config.mjs
+*.md
