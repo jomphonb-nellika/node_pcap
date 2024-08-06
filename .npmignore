@@ -5,7 +5,7 @@ prebuilds/
 spec/
 .github/
 .prebuildrc
-.Gruntfile.js
 .vscode/
+Gruntfile.js
 eslint.config.mjs
 *.md
