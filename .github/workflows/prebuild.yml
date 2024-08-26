@@ -9,6 +9,8 @@ jobs:
   prebuild:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      id-token: write
     strategy:
       matrix:
         os: [ ubuntu-latest, macos-latest ]
@@ -18,6 +20,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: latest
+          registry-url: 'https://registry.npmjs.org'
       - name: Install dependencies on Linux
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -43,6 +46,11 @@ jobs:
           npx prebuild --upload-all ${{ secrets.UPLOAD_TOKEN }}
         env:
           MAKEFLAGS: -j4
+      - name: Publish
+        if: matrix.os == 'ubuntu-latest'
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   prebuild-alpine:
     name: alpine
