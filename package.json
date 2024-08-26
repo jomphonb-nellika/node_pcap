@@ -1,6 +1,6 @@
 {
   "name": "@audc/pcap",
-  "version": "4.0.3",
+  "version": "4.0.4",
   "description": "raw packet capture, decoding, and analysis",
   "author": "Matt Ranney <mjr@ranney.com>",
   "license": "MIT",
@@ -16,6 +16,9 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "os": [
+    "!win32"
+  ],
   "scripts": {
     "install": "prebuild-install || (node-gyp rebuild --release -j max && node-gyp clean)",
     "rebuild": "node-gyp rebuild --release -j max",
@@ -25,9 +28,9 @@
     "module_path": "out"
   },
   "devDependencies": {
-    "@eslint/js": "^9.8.0",
-    "@types/node": "^20.14.14",
-    "eslint": "^9.8.0",
+    "@eslint/js": "^9.9.1",
+    "@types/node": "^20.16.1",
+    "eslint": "^9.9.1",
     "globals": "^15.9.0",
     "grunt": "^1.6.1",
     "grunt-cli": "^1.5.0",
@@ -36,7 +39,7 @@
     "grunt-mocha-istanbul": "^5.0.2",
     "grunt-mocha-test": "^0.13.3",
     "istanbul": "^0.4.5",
-    "mocha": "^10.7.0",
+    "mocha": "^10.7.3",
     "mocha-sinon": "^2.1.2",
     "should": "^13.2.3",
     "sinon": "^18.0.0"
