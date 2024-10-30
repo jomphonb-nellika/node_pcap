@@ -6,14 +6,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  prebuild:
-    name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+  prebuild-macos:
+    name: macOS
+    runs-on: macos-latest
     permissions:
       id-token: write
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest ]
     steps:
       - uses: actions/checkout@v4
       - name: Use nodejs
@@ -21,14 +18,7 @@ jobs:
         with:
           node-version: latest
           registry-url: 'https://registry.npmjs.org'
-      - name: Install dependencies on Linux
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libpcap-dev
-        shell: bash
-      - name: Install dependencies on macOS
-        if: matrix.os == 'macos-latest'
+      - name: Install dependencies
         run: |
           brew update
           brew install libpcap
@@ -38,43 +28,38 @@ jobs:
           npm install --ignore-scripts
       - name: Build
         run: |
-          npx prebuild --target 18.0.0
-          npx prebuild --target 20.0.0
-          npx prebuild --target 22.0.0
+          npx -y prebuild
       - name: Upload
         run: |
-          npx prebuild --upload-all ${{ secrets.UPLOAD_TOKEN }}
+          npx -y prebuild --upload-all ${{ secrets.UPLOAD_TOKEN }}
         env:
           MAKEFLAGS: -j4
       - name: Publish
-        if: matrix.os == 'ubuntu-latest'
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-  prebuild-alpine:
-    name: alpine
+  prebuild-linux:
+    name: ${{ matrix.os }}
     runs-on: ubuntu-latest
-    container: node:alpine
+    permissions:
+      id-token: write
+    strategy:
+      matrix:
+        os: [ debian, alpine ]
     steps:
       - uses: actions/checkout@v4
       - name: Use nodejs
         uses: actions/setup-node@v4
         with:
           node-version: latest
-      - name: Install build deps
-        run: |
-          apk add g++ libpcap-dev make python3
-      - name: Dependencies
-        run: |
-          npm install --ignore-scripts
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       - name: Build
         run: |
-          npx prebuild --target 18.0.0
-          npx prebuild --target 20.0.0
-          npx prebuild --target 22.0.0
+          docker buildx build --platform linux/amd64,linux/arm64 . -f Dockerfile.${{ matrix.os }} --output prebuilds
       - name: Upload
         run: |
-          npx prebuild --upload-all ${{ secrets.UPLOAD_TOKEN }}
-        env:
-          MAKEFLAGS: -j4
+          npx -y prebuild --upload-all ${{ secrets.UPLOAD_TOKEN }}
