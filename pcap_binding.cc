@@ -1,3 +1,4 @@
+#include <nan.h>
 #include <assert.h>
 #include <pcap/pcap.h>
 #include <iostream>
@@ -135,7 +136,7 @@ NAN_METHOD(LibVersion)
     info.GetReturnValue().Set(Nan::New(pcap_lib_version()).ToLocalChecked());
 }
 
-void Initialize(Local<Object> exports)
+static void Initialize(Local<Object> exports, v8::Local<v8::Value>, void*)
 {
     Nan::HandleScope scope;
 
@@ -146,6 +147,4 @@ void Initialize(Local<Object> exports)
     Nan::Set(exports, Nan::New("lib_version").ToLocalChecked(), Nan::New<FunctionTemplate>(LibVersion)->GetFunction(Nan::GetCurrentContext()).ToLocalChecked());
 }
 
-DISABLE_WCAST_FUNCTION_TYPE
 NODE_MODULE(pcap_binding, Initialize)
-DISABLE_WCAST_FUNCTION_TYPE_END
