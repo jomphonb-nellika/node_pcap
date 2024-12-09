@@ -6,9 +6,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  prebuild-macos:
-    name: macOS
-    runs-on: macos-latest
+  prebuild:
+    strategy:
+      matrix:
+        os: [ macos, windows ]
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
     permissions:
       id-token: write
     steps:
@@ -19,10 +22,18 @@ jobs:
           node-version: latest
           registry-url: 'https://registry.npmjs.org'
       - name: Install dependencies
+        if: matrix.os == 'macos'
         run: |
           brew update
           brew install libpcap
         shell: bash
+      - name: Add msbuild to PATH
+        if: matrix.os == 'windows'
+        uses: microsoft/setup-msbuild@v1.3
+      - name: Install node-gyp
+        if: matrix.os == 'windows-latest'
+        run: |
+          npm install --global node-gyp@latest
       - name: Dependencies
         run: |
           npm install --ignore-scripts
@@ -35,6 +46,7 @@ jobs:
         env:
           MAKEFLAGS: -j4
       - name: Publish
+        if: matrix.os == 'macos'
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

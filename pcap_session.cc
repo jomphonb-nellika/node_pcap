@@ -1,8 +1,10 @@
 #include <assert.h>
-#include <pcap/pcap.h>
-#include <sys/ioctl.h>
 #include <cstring>
 #include <string.h>
+#ifndef _WIN32
+#include <pcap/pcap.h>
+#include <sys/ioctl.h>
+#endif
 
 #include "pcap_session.h"
 
@@ -61,7 +63,9 @@ void PcapSession::New(const Nan::FunctionCallbackInfo<Value>& info) {
 //
 void PcapSession::PacketReady(u_char *s, const struct pcap_pkthdr* pkthdr, const u_char* packet) {
     Nan::HandleScope scope;
-
+#ifdef _WIN32
+    Nan::ThrowError("Not supported on Windows");
+#else
     PcapSession* session = (PcapSession *)s;
 
     if (session->pcap_dump_handle != NULL) {
@@ -89,12 +93,16 @@ void PcapSession::PacketReady(u_char *s, const struct pcap_pkthdr* pkthdr, const
     if (try_catch.HasCaught())  {
         Nan::FatalException(try_catch);
     }
+#endif
 }
 
 void PcapSession::Dispatch(const Nan::FunctionCallbackInfo<Value>& info)
 {
     Nan::HandleScope scope;
 
+#ifdef _WIN32
+    Nan::ThrowError("Not supported on Windows");
+#else
     if (info.Length() != 2) {
         Nan::ThrowTypeError("Dispatch takes exactly two arguments");
         return;
@@ -128,12 +136,12 @@ void PcapSession::Dispatch(const Nan::FunctionCallbackInfo<Value>& info)
     } while (packet_count > 0);
 
     info.GetReturnValue().Set(Nan::New<Integer>(packet_count));
+#endif
 }
 
 void PcapSession::Open(bool live, const Nan::FunctionCallbackInfo<Value>& info)
 {
     Nan::HandleScope scope;
-    char errbuf[PCAP_ERRBUF_SIZE];
 
     if (info.Length() == 10) {
         if (!info[0]->IsString()) {
@@ -190,8 +198,13 @@ void PcapSession::Open(bool live, const Nan::FunctionCallbackInfo<Value>& info)
     PcapSession* session = Nan::ObjectWrap::Unwrap<PcapSession>(info.This());
 
     session->packet_ready_cb.SetFunction(info[5].As<Function>());
-    session->pcap_dump_handle = NULL;
 
+#ifdef _WIN32
+    Nan::ThrowError("Not supported on Windows");
+#else
+    char errbuf[PCAP_ERRBUF_SIZE];
+
+    session->pcap_dump_handle = NULL;
     if (live) {
         if (pcap_lookupnet((char *) *device, &session->net, &session->mask, errbuf) == -1) {
             session->net = 0;
@@ -325,6 +338,7 @@ void PcapSession::Open(bool live, const Nan::FunctionCallbackInfo<Value>& info)
         break;
     }
     info.GetReturnValue().Set(ret);
+#endif
 }
 
 void PcapSession::OpenLive(const Nan::FunctionCallbackInfo<Value>& info)
@@ -340,6 +354,9 @@ void PcapSession::OpenOffline(const Nan::FunctionCallbackInfo<Value>& info)
 void PcapSession::Close(const Nan::FunctionCallbackInfo<Value>& info)
 {
     Nan::HandleScope scope;
+#ifdef _WIN32
+    Nan::ThrowError("Not supported on Windows");
+#else
 
     PcapSession* session = Nan::ObjectWrap::Unwrap<PcapSession>(info.Holder());
 
@@ -351,6 +368,7 @@ void PcapSession::Close(const Nan::FunctionCallbackInfo<Value>& info)
     if (session->pcap_handle != NULL) {
         pcap_breakloop(session->pcap_handle);
     }
+#endif
 }
 
 void PcapSession::FinalizeClose(PcapSession * session) {
@@ -361,8 +379,10 @@ void PcapSession::FinalizeClose(PcapSession * session) {
         delete session->poll_resource;
     }
 
+#ifndef _WIN32
     pcap_close(session->pcap_handle);
     session->pcap_handle = NULL;
+#endif
 
     session->packet_ready_cb.Reset();
 }
@@ -389,6 +409,9 @@ void PcapSession::StartPolling(const Nan::FunctionCallbackInfo<Value>& info)
 {
     Nan::HandleScope scope;
 
+#ifdef _WIN32
+    Nan::ThrowError("Not supported on Windows");
+#else
     PcapSession* session = Nan::ObjectWrap::Unwrap<PcapSession>(info.Holder());
     if (session->poll_init) return;
 
@@ -417,12 +440,16 @@ void PcapSession::StartPolling(const Nan::FunctionCallbackInfo<Value>& info)
     uv_ref((uv_handle_t*) &session->poll_handle);
 
     session->poll_resource = new Nan::AsyncResource("pcap:PcapSession", info.Holder());
+#endif
 }
 
 void PcapSession::Stats(const Nan::FunctionCallbackInfo<Value>& info)
 {
     Nan::HandleScope scope;
 
+#ifdef _WIN32
+    Nan::ThrowError("Not supported on Windows");
+#else
     struct pcap_stat ps;
 
     PcapSession* session = Nan::ObjectWrap::Unwrap<PcapSession>(info.Holder());
@@ -446,6 +473,7 @@ void PcapSession::Stats(const Nan::FunctionCallbackInfo<Value>& info)
     // ps_ifdrop may not be supported on this platform, but there's no good way to tell, is there?
 
     info.GetReturnValue().Set(stats_obj);
+#endif
 }
 
 void PcapSession::Inject(const Nan::FunctionCallbackInfo<Value>& info)
@@ -464,6 +492,9 @@ void PcapSession::Inject(const Nan::FunctionCallbackInfo<Value>& info)
 
     PcapSession* session = Nan::ObjectWrap::Unwrap<PcapSession>(info.Holder());
 
+#ifdef _WIN32
+    Nan::ThrowError("Not supported on Windows");
+#else
     if (session->pcap_handle == NULL) {
         Nan::ThrowError("Error: pcap session already closed");
         return;
@@ -479,5 +510,5 @@ void PcapSession::Inject(const Nan::FunctionCallbackInfo<Value>& info)
         Nan::ThrowError("Pcap inject failed.");
         return;
     }
-    return;
+#endif
 }

@@ -1,22 +1,24 @@
-#include <nan.h>
 #include <assert.h>
-#include <pcap/pcap.h>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#ifndef _WIN32
+#include <pcap/pcap.h>
 #include <sys/time.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
+#endif
 
 #include "pcap_session.h"
 
 using namespace v8;
 
+#ifndef _WIN32
 // Helper method, convert a sockaddr* (AF_INET or AF_INET6) to a string, and set it as the property
 // named 'key' in the Address object you pass in.
-void SetAddrStringHelper(const char* key, sockaddr *addr, Local<Object> Address){
+static void SetAddrStringHelper(const char* key, sockaddr *addr, Local<Object> Address){
   if(key && addr){
     char dst_addr[INET6_ADDRSTRLEN + 1] = {0};
     char* src = 0;
@@ -36,12 +38,15 @@ void SetAddrStringHelper(const char* key, sockaddr *addr, Local<Object> Address)
     }
   }
 }
-
+#endif
 
 NAN_METHOD(FindAllDevs)
 {
     Nan::HandleScope scope;
 
+#ifdef _WIN32
+    Nan::ThrowError("Not supported on Windows");
+#else
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_if_t *alldevs, *cur_dev;
 
@@ -87,11 +92,15 @@ NAN_METHOD(FindAllDevs)
 
     pcap_freealldevs(alldevs);
     info.GetReturnValue().Set(DevsArray);
+#endif
 }
 
 NAN_METHOD(DefaultDevice)
 {
     Nan::HandleScope scope;
+#ifdef _WIN32
+    Nan::ThrowError("Not supported on Windows");
+#else
     char errbuf[PCAP_ERRBUF_SIZE];
 
     // Look up the first device with an address, pcap_lookupdev() just returns the first non-loopback device.
@@ -128,18 +137,21 @@ NAN_METHOD(DefaultDevice)
     }
 
     pcap_freealldevs(alldevs);
-    return;
+#endif
 }
 
 NAN_METHOD(LibVersion)
 {
+#ifdef _WIN32
+    Nan::ThrowError("Not supported on Windows");
+#else
     info.GetReturnValue().Set(Nan::New(pcap_lib_version()).ToLocalChecked());
+#endif
 }
 
 static void Initialize(Local<Object> exports, v8::Local<v8::Value>, void*)
 {
     Nan::HandleScope scope;
-
     PcapSession::Init(exports);
 
     Nan::Set(exports, Nan::New("findalldevs").ToLocalChecked(), Nan::New<FunctionTemplate>(FindAllDevs)->GetFunction(Nan::GetCurrentContext()).ToLocalChecked());
