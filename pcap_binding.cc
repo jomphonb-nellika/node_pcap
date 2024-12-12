@@ -143,7 +143,7 @@ NAN_METHOD(DefaultDevice)
 NAN_METHOD(LibVersion)
 {
 #ifdef _WIN32
-    Nan::ThrowError("Not supported on Windows");
+    info.GetReturnValue().Set(Nan::New("libpcap version 1.10.5 (dummy for Windows)").ToLocalChecked());
 #else
     info.GetReturnValue().Set(Nan::New(pcap_lib_version()).ToLocalChecked());
 #endif
