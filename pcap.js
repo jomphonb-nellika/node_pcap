@@ -85,8 +85,9 @@ class PcapSession extends EventEmitter {
                 do {
                     packets = this.session.dispatch(this.buf, this.header);
                 } while (packets > 0);
-                    this.emit("end");
-                    this.emit("complete");
+                this.emit("end");
+                this.emit("complete");
+                this.close();
             });
         }
     }
@@ -95,6 +96,9 @@ class PcapSession extends EventEmitter {
         this.emit("packet", full_packet);
     }
     close() {
+        if (!this.opened)
+            return;
+
         this.opened = false;
 
         this.removeAllListeners();

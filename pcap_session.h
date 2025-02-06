@@ -47,6 +47,7 @@ private:
     uv_poll_t poll_handle;
     Nan::AsyncResource* poll_resource = NULL;
     bool poll_init = false;
+    bool dispatching = false;
 };
 
 #endif
