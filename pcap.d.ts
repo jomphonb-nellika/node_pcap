@@ -147,6 +147,7 @@ export interface LiveSessionOptions extends CommonSessionOptions {
 }
 
 export interface OfflineSessionOptions extends CommonSessionOptions {
+    yield_after_packets?: number;
 }
 
 /**

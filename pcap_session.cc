@@ -103,8 +103,9 @@ void PcapSession::Dispatch(const Nan::FunctionCallbackInfo<Value>& info)
 #ifdef _WIN32
     Nan::ThrowError("Not supported on Windows");
 #else
-    if (info.Length() != 2) {
-        Nan::ThrowTypeError("Dispatch takes exactly two arguments");
+    int packet_count = 1;
+    if (info.Length() < 2) {
+        Nan::ThrowTypeError("Dispatch takes at least two arguments");
         return;
     }
 
@@ -118,6 +119,14 @@ void PcapSession::Dispatch(const Nan::FunctionCallbackInfo<Value>& info)
         return;
     }
 
+    if (info.Length() > 2) {
+        if (!info[2]->IsInt32()) {
+            Nan::ThrowTypeError("Third argument must be a Number");
+            return;
+        }
+        packet_count = Nan::To<int32_t>(info[2]).FromJust();
+    }
+
     PcapSession* session = Nan::ObjectWrap::Unwrap<PcapSession>(info.This());
 
     Local<Object> buffer_obj = info[0]->ToObject(Nan::GetCurrentContext()).FromMaybe(Local<v8::Object>());
@@ -126,18 +135,14 @@ void PcapSession::Dispatch(const Nan::FunctionCallbackInfo<Value>& info)
     Local<Object> header_obj = info[1]->ToObject(Nan::GetCurrentContext()).FromMaybe(Local<v8::Object>());
     session->header_data = node::Buffer::Data(header_obj);
 
-    int packet_count;
     session->dispatching = true;
-    do {
-        packet_count = pcap_dispatch(session->pcap_handle, 1, PacketReady, (u_char *)session);
-
-        if (packet_count == PCAP_ERROR_BREAK) {
-            FinalizeClose(session);
-        }
-    } while (packet_count > 0);
+    const int processed = pcap_dispatch(session->pcap_handle, packet_count, PacketReady, (u_char *)session);
     session->dispatching = false;
+    if (processed == PCAP_ERROR_BREAK) {
+        FinalizeClose(session);
+    }
 
-    info.GetReturnValue().Set(Nan::New<Integer>(packet_count));
+    info.GetReturnValue().Set(Nan::New<Integer>(processed));
 #endif
 }
 
