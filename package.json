@@ -1,6 +1,6 @@
 {
   "name": "@nlk/pcap",
-  "version": "5.0.3",
+  "version": "5.0.4",
   "description": "raw packet capture, decoding, and analysis",
   "author": "Matt Ranney <mjr@ranney.com>",
   "license": "MIT",
