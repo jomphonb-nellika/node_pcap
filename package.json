@@ -1,6 +1,6 @@
 {
-  "name": "@audc/pcap",
-  "version": "4.0.17",
+  "name": "@nlk/pcap",
+  "version": "5.0.1",
   "description": "raw packet capture, decoding, and analysis",
   "author": "Matt Ranney <mjr@ranney.com>",
   "license": "MIT",
@@ -11,10 +11,10 @@
   "types": "pcap.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/audiocodes/node_pcap"
+    "url": "https://github.com/jomphonb-nellika/node_pcap"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=14.0.0"
   },
   "scripts": {
     "install": "prebuild-install || (node-gyp rebuild --release -j max && node-gyp clean)",

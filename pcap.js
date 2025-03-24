@@ -20,12 +20,12 @@ exports.warningHandler = function warningHandler(x) {
 class PcapSession extends EventEmitter {
     constructor(options) {
         super();
-        this.options = {...options};
-        this.options.filter ||= "";
-        this.options.outfile ||= "";
-        this.options.promiscuous ??= true;
-        this.options.monitor ??= false;
-        this.options.yield_after_packets ??= 100;
+        this.options = Object.assign({}, options);
+        if (this.options.filter === undefined) this.options.filter = "";
+        if (this.options.outfile === undefined) this.options.outfile = "";
+        if (this.options.promiscuous === undefined) this.options.promiscuous = true;
+        if (this.options.monitor === undefined) this.options.monitor = false;
+        if (this.options.yield_after_packets === undefined) this.options.yield_after_packets = 100;
 
         this.link_type = null;
         this.opened = null;
