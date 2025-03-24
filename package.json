@@ -1,6 +1,6 @@
 {
   "name": "@nlk/pcap",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "description": "raw packet capture, decoding, and analysis",
   "author": "Matt Ranney <mjr@ranney.com>",
   "license": "MIT",
@@ -40,7 +40,6 @@
     "sinon": "^19.0.2"
   },
   "dependencies": {
-    "nan": "^2.22.0",
-    "prebuild-install": "^7.1.3"
+    "nan": "^2.22.0"
   }
 }
