@@ -40,6 +40,7 @@
     "sinon": "^19.0.2"
   },
   "dependencies": {
-    "nan": "^2.22.0"
+    "nan": "^2.22.0",
+    "timers-promises": "^1.0.1"
   }
 }

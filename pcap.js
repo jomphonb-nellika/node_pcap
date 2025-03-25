@@ -3,7 +3,7 @@ const binding          = require("./out/pcap_binding");
 const { decode }       = require("./decode");
 const tcp_tracker      = require("./tcp_tracker");
 const DNSCache         = require("./dns_cache");
-const { setImmediate } = require("timers/promises");
+const { setImmediate } = require("timers-promises");
 const { Buffer }       = require("buffer");
 const process          = require("process");
 
